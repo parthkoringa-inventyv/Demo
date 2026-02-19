@@ -1,0 +1,70 @@
+<h1>Call Setup Messages Demo</h1>
+<div>
+  <h3>Conenction Status: {{connectionStatus()}}</h3>
+</div>
+<div>
+  <h3>Register user</h3>
+  UserId: <input type="text" name="Enter UserId" [ngModel]="userid()" (ngModelChange)="userid.set($event)">
+  <button (click)="connect()">Connect</button>
+</div>
+
+@if(connectionStatus() === "Connected" )
+{
+  <h3>Start Call</h3>
+
+  <div>
+    <label>Target User:</label>
+    <input
+      type="text"
+      placeholder="Enter target user id"
+      [ngModel]="targetUser()"
+      (ngModelChange)="targetUser.set($event)"
+    />
+
+    <button (click)="startCall()">Call</button>
+  </div>
+}
+
+@if (callState() === 'incoming_call') {
+
+  <div style="padding: 12px; border: 1px solid black;">
+    <h3>Incoming Call</h3>
+
+    <p>
+      <strong>{{ callSender() }}</strong> is calling you
+    </p>
+
+    <button (click)="acceptCall()">Accept</button>
+    <button (click)="rejectCall()">Reject</button>
+  </div>
+
+}
+
+@if (callState() === 'calling') {
+  <div>
+    <h3>Calling {{ targetUser() }}...</h3>
+    <p>Waiting for user to accept</p>
+  </div>
+}
+
+<div [hidden]="callState() !== 'in-call'">
+  
+  <h3>In Call</h3>
+
+  <div style="display: flex; gap: 20px;">
+
+    <div>
+      <h4>Local Video</h4>
+      <video #localVideo autoplay muted playsinline width="300"></video>
+    </div>
+
+    <div>
+      <h4>Remote Video</h4>
+      <video #remoteVideo autoplay muted playsinline width="300"></video>
+    </div>
+
+  </div>
+  <button (click)="endCall()">Hang Up</button>
+</div>
+
+
