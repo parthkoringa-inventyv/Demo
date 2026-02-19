@@ -18,13 +18,14 @@ The goal of this demo is to understand and implement the core signaling flow req
 
 ---
 
+# callsetupessages-signaling-demo
+
 ## Project Structure
-
+```
 callsetupessages-signaling-demo/
-│
-├── call-demo/ → Angular frontend (WebRTC + UI + signaling logic)
-└── call-setup-server/ → Node.js WebSocket signaling server
-
+├── call-demo/           → Angular frontend (WebRTC + UI + signaling logic)
+└── call-setup-server/   → Node.js WebSocket signaling server
+```
 
 ### Client
 The frontend application:
