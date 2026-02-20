@@ -93,6 +93,7 @@ export class SignalingService {
 
     this.socket.onclose = () =>
     {
+      this.cleanup();
       this.connectionStatus.set("Disconnected");
       this.socket = null;
     }
@@ -263,4 +264,36 @@ export class SignalingService {
     this.callState.set('idle');
   }
 
+  disconnect() {
+    // If call is active, inform the other user
+    if (this.callState() === 'in-call' && this.targetUser) {
+      try {
+        this.send({
+          type: 'hangup_call',
+          to: this.targetUser
+        });
+      } catch (e) {
+        console.warn('Failed to send hangup before disconnect', e);
+      }
+    }
+
+    // Cleanup WebRTC
+    this.cleanup();
+
+    // Close WebSocket safely
+    if (this.socket) {
+      try {
+        if (this.socket.readyState === WebSocket.OPEN ||
+            this.socket.readyState === WebSocket.CONNECTING) {
+          this.socket.close();
+        }
+      } catch (e) {
+        console.error('WebSocket close error:', e);
+      }
+
+      this.socket = null;
+    }
+
+    this.connectionStatus.set('Disconnected');
+  }
 }

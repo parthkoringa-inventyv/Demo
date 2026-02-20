@@ -50,6 +50,12 @@ export class App {
     this.signaling.connect(this.userid());
   }
 
+  disconnect()
+  {
+    if(!this.userid()) return;
+    this.signaling.disconnect();
+  }
+
   startCall()
   {
     if(!this.targetUser()) return;

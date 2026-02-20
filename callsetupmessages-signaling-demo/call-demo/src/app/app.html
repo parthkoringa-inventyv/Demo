@@ -6,6 +6,7 @@
   <h3>Register user</h3>
   UserId: <input type="text" name="Enter UserId" [ngModel]="userid()" (ngModelChange)="userid.set($event)">
   <button (click)="connect()">Connect</button>
+  <button (click)="disconnect()">Disconnect</button>
 </div>
 
 @if(connectionStatus() === "Connected" )
