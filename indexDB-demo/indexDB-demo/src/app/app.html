@@ -1,0 +1,54 @@
+<h2>User Management (IndexedDB Demo)</h2>
+
+<form [formGroup]="form" (ngSubmit)="submit()">
+
+  <div>
+    <label>User ID</label>
+    <input type="text" formControlName="userId" />
+  </div>
+
+  <div>
+    <label>Name</label>
+    <input type="text" formControlName="name" />
+  </div>
+
+  <div>
+    <label>Email</label>
+    <input type="email" formControlName="email" />
+  </div>
+
+  <button type="submit">
+    @if (editingUserId()) {
+    Update User
+    } @else {
+    Add User
+    }
+  </button>
+
+  @if (editingUserId()) {
+  <button type="button" (click)="cancelEdit()">Cancel</button>
+  }
+
+</form>
+
+<hr />
+
+<h3>Stored Users</h3>
+
+@if (users().length === 0) {
+<p>No users found.</p>
+} @else {
+<ul>
+  @for (user of users(); track user.userId) {
+  <li>
+    <strong>{{ user.name }}</strong>
+    ({{ user.email }})
+    <br />
+    ID: {{ user.userId }}
+
+    <button (click)="edit(user)">Edit</button>
+    <button (click)="delete(user.userId)">Delete</button>
+  </li>
+  }
+</ul>
+}
