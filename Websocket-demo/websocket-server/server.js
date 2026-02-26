@@ -12,14 +12,14 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ noServer: true });
 
 // Store active users
-const clients = new Map(); 
+const clients = new Map();
 // key: userId
 // value: WebSocket instance
 
 // Handle upgrade manually
 server.on('upgrade', (request, socket, head) => {
   const fullUrl = new URL(request.url, `http://${request.headers.host}`);
-const userId = fullUrl.searchParams.get('userId');
+  const userId = fullUrl.searchParams.get('userId');
 
   if (!userId) {
     socket.destroy();
@@ -40,29 +40,40 @@ wss.on('connection', (ws) => {
   ws.on('message', (data) => {
     try {
       const parsed = JSON.parse(data.toString());
-      const { to, message } = parsed;
+      const { type, to, message } = parsed;
 
-      if (!to || !message) {
-        ws.send(JSON.stringify({ error: 'Invalid message format' }));
+      if (!to) {
+        ws.send(JSON.stringify({ error: 'Missing target user (to)' }));
         return;
       }
 
       const target = clients.get(to);
 
-      if (target && target.readyState === WebSocket.OPEN) {
-        target.send(
-          JSON.stringify({
-            from: ws.userId,
-            message,
-          })
-        );
-      } else {
-        ws.send(
-          JSON.stringify({
-            error: `User ${to} is not connected`
-          })
-        );
+      if (!target || target.readyState !== WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          error: `User ${to} is not connected`
+        }));
+        return;
       }
+
+      if (type === 'typing' || type === 'stop_typing') {
+        target.send(JSON.stringify({
+          type,
+          from: ws.userId
+        }));
+        return;
+      }
+
+      if (message) {
+        target.send(JSON.stringify({
+          type: 'chat',
+          from: ws.userId,
+          message
+        }));
+        return;
+      }
+
+      ws.send(JSON.stringify({ error: 'Invalid message format' }));
 
     } catch (err) {
       ws.send(JSON.stringify({ error: 'Invalid JSON' }));

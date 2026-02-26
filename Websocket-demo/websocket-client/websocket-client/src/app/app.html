@@ -5,11 +5,7 @@
   <div class="card">
     <p><strong>Status:</strong> {{ wsService.status() }}</p>
 
-    UserID: <input
-      type="text"
-      placeholder="Enter user id"
-      [(ngModel)]="userid"
-    />
+    UserID: <input type="text" placeholder="Enter user id" [(ngModel)]="userid" />
     <button (click)="connect()">Connect</button>
     <button (click)="disconnect()">Disconnect</button>
   </div>
@@ -17,17 +13,9 @@
   <div class="card">
     <h3>Send Message</h3>
 
-    Target: <input
-      type="text"
-      placeholder="Target user id"
-      [(ngModel)]="target"
-    /><br>
+    Target: <input type="text" placeholder="Target user id" [(ngModel)]="target" /><br>
 
-    Message: <input
-      type="text"
-      placeholder="Enter message"
-      [(ngModel)]="msg"
-    />
+    Message: <input type="text" placeholder="Enter message" [(ngModel)]="msg" (input)="onTyping()" />
 
     <button (click)="sendMessage()">Send</button>
   </div>
@@ -36,13 +24,16 @@
     <h3>Messages</h3>
 
     @if (wsService.chat().length === 0) {
-      <p class="empty">No messages yet</p>
+    <p class="empty">No messages yet</p>
     }
 
     @for (message of wsService.chat(); track message) {
-      <div class="chat-message">
-        {{ message }}
-      </div>
+    <div class="chat-message">
+      {{ message }}
+    </div>
+    }
+    @if (wsService.remoteTyping()) {
+    <p class="typing-indicator">User is typing...</p>
     }
   </div>
 

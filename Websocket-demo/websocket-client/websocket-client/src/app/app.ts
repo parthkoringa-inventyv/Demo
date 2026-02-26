@@ -11,23 +11,25 @@ import { FormsModule } from '@angular/forms';
 })
 export class App {
   protected readonly title = signal('websocket-client');
-  
+
   readonly wsService = inject(WebsocketService);
   msg = "";
   userid = "";
   target = "";
-  connect()
-  {
+  connect() {
     this.wsService.connect(this.userid);
   }
 
-  disconnect()
-  {
+  disconnect() {
     this.wsService.closeConnection();
   }
 
-  sendMessage()
-  {
-    this.wsService.sendMessage(this.target,this.msg);
+  sendMessage() {
+    this.wsService.sendMessage(this.target, this.msg);
+  }
+
+  onTyping() {
+    if (!this.target) return;
+    this.wsService.sendTyping(this.target);
   }
 }

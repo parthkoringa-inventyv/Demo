@@ -9,6 +9,9 @@ export class WebsocketService {
 
   readonly status = signal<string>("Disconnected");
   readonly chat = signal<string[]>([]);
+  readonly remoteTyping = signal<boolean>(false);
+  private typingTimeout: any = null;
+  private isTyping = false;
 
   connect(userId: string): void {
     if (this.socket) return;
@@ -24,18 +27,39 @@ export class WebsocketService {
     };
 
     this.socket.onmessage = (event) => {
-      console.log(event.data);
       try {
         const parsed = JSON.parse(event.data);
-        const formatted = `${parsed.from}: ${parsed.message}`;
 
-        this.chat.update(messages => [
-          ...messages,
-          formatted
-        ]);
+        if (parsed.error) {
+          console.error("Server error:", parsed.error);
+          this.chat.update(messages => messages.slice(0, -1));
+          // Option A: Show alert
+          alert(parsed.error);
 
-      } catch(err) {
-        console.log(err);
+          return;
+        }
+
+        switch (parsed.type) {
+          case "typing":
+            this.remoteTyping.set(true);
+            return;
+
+          case "stop_typing":
+            this.remoteTyping.set(false);
+            return;
+
+          case "chat":
+            if (!parsed.from || !parsed.message) return;
+
+            this.chat.update(messages => [
+              ...messages,
+              `${parsed.from}: ${parsed.message}`
+            ]);
+            return;
+        }
+
+      } catch (err) {
+        console.log("Error: ", err);
       }
     };
 
@@ -55,7 +79,12 @@ export class WebsocketService {
       return;
     }
 
-    this.socket.send(JSON.stringify({ to, message }));
+    this.socket.send(JSON.stringify({
+      type: "chat",
+      to,
+      message
+    }));
+
     const formatted = `me: ${message}`;
     this.chat.update(messages => [
       ...messages,
@@ -65,5 +94,38 @@ export class WebsocketService {
 
   closeConnection(): void {
     this.socket?.close();
+  }
+
+  sendTyping(to: string) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+    if (!this.isTyping) {
+      this.isTyping = true;
+
+      this.socket.send(JSON.stringify({
+        type: "typing",
+        to
+      }));
+    }
+
+    // Reset timeout
+    clearTimeout(this.typingTimeout);
+
+    this.typingTimeout = setTimeout(() => {
+      this.stopTyping(to);
+    }, 3000); // 1 second after user stops typing
+  }
+
+  stopTyping(to: string) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) return;
+
+    if (this.isTyping) {
+      this.socket.send(JSON.stringify({
+        type: "stop_typing",
+        to
+      }));
+    }
+
+    this.isTyping = false;
   }
 }
