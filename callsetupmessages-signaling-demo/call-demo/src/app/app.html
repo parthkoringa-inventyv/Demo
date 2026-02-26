@@ -11,45 +11,41 @@
 
 @if(connectionStatus() === "Connected" )
 {
-  <h3>Start Call</h3>
+<h3>Start Call</h3>
 
-  <div>
-    <label>Target User:</label>
-    <input
-      type="text"
-      placeholder="Enter target user id"
-      [ngModel]="targetUser()"
-      (ngModelChange)="targetUser.set($event)"
-    />
+<div>
+  <label>Target User:</label>
+  <input type="text" placeholder="Enter target user id" [ngModel]="targetUser()"
+    (ngModelChange)="targetUser.set($event)" />
 
-    <button (click)="startCall()">Call</button>
-  </div>
+  <button (click)="startCall()">Call</button>
+</div>
 }
 
 @if (callState() === 'incoming_call') {
 
-  <div style="padding: 12px; border: 1px solid black;">
-    <h3>Incoming Call</h3>
+<div style="padding: 12px; border: 1px solid black;">
+  <h3>Incoming Call</h3>
 
-    <p>
-      <strong>{{ callSender() }}</strong> is calling you
-    </p>
+  <p>
+    <strong>{{ callSender() }}</strong> is calling you
+  </p>
 
-    <button (click)="acceptCall()">Accept</button>
-    <button (click)="rejectCall()">Reject</button>
-  </div>
+  <button (click)="acceptCall()">Accept</button>
+  <button (click)="rejectCall()">Reject</button>
+</div>
 
 }
 
 @if (callState() === 'calling') {
-  <div>
-    <h3>Calling {{ targetUser() }}...</h3>
-    <p>Waiting for user to accept</p>
-  </div>
+<div>
+  <h3>Calling {{ targetUser() }}...</h3>
+  <p>Waiting for user to accept</p>
+</div>
 }
 
 <div [hidden]="callState() !== 'in-call'">
-  
+
   <h3>In Call</h3>
 
   <div style="display: flex; gap: 20px;">
@@ -59,13 +55,36 @@
       <video #localVideo autoplay muted playsinline width="300"></video>
     </div>
 
-    <div>
+    <div style="position: relative; width: 300px;">
       <h4>Remote Video</h4>
-      <video #remoteVideo autoplay muted playsinline width="300"></video>
+
+      <video #remoteVideo autoplay playsinline width="300"></video>
+
+      @if(this.remoteVideoOff()) {
+      <div style="
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 300px;
+          height: 100%;
+          background: rgba(0,0,0,0.7);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 18px;
+        ">
+        Camera Off
+      </div>
+      }
     </div>
-
   </div>
+  @if(this.remoteAudioOff()) {
+  <div style="color: red; font-weight: bold;">
+    Remote Microphone Muted
+  </div>
+  }
   <button (click)="endCall()">Hang Up</button>
+  <button (click)="mute()">Toggle Audio</button>
+  <button (click)="cameraOff()">Toggle Camera</button>
 </div>
-
-

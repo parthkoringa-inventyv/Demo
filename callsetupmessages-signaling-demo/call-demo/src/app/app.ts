@@ -40,26 +40,25 @@ export class App {
   readonly callSender = this.signaling.callSender;
   readonly localStream = this.signaling.localStream;
   readonly remoteStream = this.signaling.remoteStream;
+  readonly remoteAudioOff = this.signaling.remoteAudioMuted;
+  readonly remoteVideoOff = this.signaling.remoteVideoMuted;
 
   userid = signal('');
   targetUser = signal('');
 
-  connect()
-  {
-    if(!this.userid()) return;
+  connect() {
+    if (!this.userid()) return;
     this.signaling.connect(this.userid());
   }
 
-  disconnect()
-  {
-    if(!this.userid()) return;
+  disconnect() {
+    if (!this.userid()) return;
     this.signaling.disconnect();
   }
 
-  startCall()
-  {
-    if(!this.targetUser()) return;
-    if (this.targetUser() === this.userid()){
+  startCall() {
+    if (!this.targetUser()) return;
+    if (this.targetUser() === this.userid()) {
       alert("can't call to yourself!");
       return;
     };
@@ -77,5 +76,13 @@ export class App {
 
   endCall() {
     this.signaling.endCall();
+  }
+
+  mute() {
+    this.signaling.toggleAudio();
+  }
+
+  cameraOff() {
+    this.signaling.toggleCamera();
   }
 }

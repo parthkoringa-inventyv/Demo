@@ -1,12 +1,14 @@
 import { Injectable, signal } from '@angular/core';
 import { every, single } from 'rxjs';
 
-export interface setupMessage{
+export interface setupMessage {
   type: string,
   to: string,
   from?: string,
   sdp?: any,
-  ice_candidate?: any
+  ice_candidate?: any,
+  audioMuted?: boolean,
+  videoMuted?: boolean
 }
 
 export type callStatus = "idle" | "calling" | "in-call" | "incoming_call";
@@ -15,10 +17,12 @@ export type callStatus = "idle" | "calling" | "in-call" | "incoming_call";
   providedIn: 'root',
 })
 export class SignalingService {
-  
-  readonly connectionStatus = signal<"Disconnected"|"Connected">("Disconnected");
+
+  readonly connectionStatus = signal<"Disconnected" | "Connected">("Disconnected");
   readonly callState = signal<callStatus>("idle");
-  readonly callSender = signal<string|null>(null);
+  readonly callSender = signal<string | null>(null);
+  readonly remoteAudioMuted = signal<boolean>(false);
+  readonly remoteVideoMuted = signal<boolean>(false);
   readonly localStream = signal<MediaStream | null>(null);
   readonly remoteStream = signal<MediaStream | null>(null);
   private pendingIceCandidates: RTCIceCandidateInit[] = [];
@@ -37,7 +41,7 @@ export class SignalingService {
       to: target
     });
     console.log("call start message send");
-    
+
   }
 
   acceptCall() {
@@ -74,51 +78,44 @@ export class SignalingService {
     this.cleanup();
   }
 
-  private send(msg: setupMessage){
+  private send(msg: setupMessage) {
     this.socket?.send(JSON.stringify(msg));
   }
 
-  connect(userId: string)
-  {
-    if(this.socket) return;
+  connect(userId: string) {
+    if (this.socket) return;
 
     this.currentUser = userId;
 
     this.socket = new WebSocket(`wss://192.168.10.25:8080?userId=${userId}`);
 
-    this.socket.onopen = () =>
-    {
+    this.socket.onopen = () => {
       this.connectionStatus.set("Connected");
-    } 
+    }
 
-    this.socket.onclose = () =>
-    {
+    this.socket.onclose = () => {
       this.cleanup();
       this.connectionStatus.set("Disconnected");
       this.socket = null;
     }
 
-    this.socket.onmessage = (event) => 
-    {
+    this.socket.onmessage = (event) => {
       const notification: setupMessage = JSON.parse(event.data);
       this.handleNotification(notification);
     }
 
-    this.socket.onerror = (error) =>
-    {
+    this.socket.onerror = (error) => {
       console.error(error);
     }
   }
 
-  async handleNotification(msg: setupMessage)
-  {
-    switch(msg.type)
-    {
+  async handleNotification(msg: setupMessage) {
+    switch (msg.type) {
       case ("start_call"):
         this.callState.set("incoming_call");
         this.callSender.set(msg.from!);
         console.log("incoming call");
-        
+
         break;
 
       case ("accept_call"):
@@ -138,33 +135,43 @@ export class SignalingService {
         this.cleanup();
         break;
 
+      case ("media_status"):
+        if (typeof msg.audioMuted === 'boolean') {
+          this.remoteAudioMuted.set(msg.audioMuted);
+        }
+
+        if (typeof msg.videoMuted === 'boolean') {
+          this.remoteVideoMuted.set(msg.videoMuted);
+        }
+
+        break;
+
       case ("sdp_offer"):
         await this.handleOffer(msg);
-        console.log("sdp offer received"+msg.sdp);
-        
+        console.log("sdp offer received", msg.sdp);
+
         break;
 
       case ("sdp_answer"):
         await this.handleAnswer(msg);
-        console.log(("sdp answer received"+msg.sdp));
-        
+        console.log("sdp answer received", msg.sdp);
+
         break;
 
-      case ("ice_candidate"):  
+      case ("ice_candidate"):
         if (this.peerConnection?.remoteDescription) {
           await this.peerConnection.addIceCandidate(msg.ice_candidate);
         } else {
           this.pendingIceCandidates.push(msg.ice_candidate);
         }
 
-        console.log("ice candidate received");
-        
-        break;    
+        console.log("ice candidate received", msg.ice_candidate);
+
+        break;
     }
   }
 
-  async initPeerConnection()
-  {
+  async initPeerConnection() {
     this.peerConnection = new RTCPeerConnection({
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' }
@@ -173,7 +180,7 @@ export class SignalingService {
 
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
-      audio: false
+      audio: true
     });
 
     this.localStream.set(stream);
@@ -196,21 +203,21 @@ export class SignalingService {
       }
     };
   }
-  
+
   async handleAccepted() {
     await this.initPeerConnection();
-    
+
     const offer = await this.peerConnection.createOffer();
     await this.peerConnection.setLocalDescription(offer);
 
     this.send({
-      type:"sdp_offer",
+      type: "sdp_offer",
       to: this.targetUser,
       sdp: offer
     });
   }
 
-  async handleAnswer(msg:setupMessage) {
+  async handleAnswer(msg: setupMessage) {
     await this.peerConnection.setRemoteDescription(msg.sdp);
     for (const candidate of this.pendingIceCandidates) {
       await this.peerConnection.addIceCandidate(candidate);
@@ -218,7 +225,7 @@ export class SignalingService {
     this.pendingIceCandidates = [];
 
   }
-  
+
   async handleOffer(msg: setupMessage) {
     await this.initPeerConnection();
 
@@ -284,7 +291,7 @@ export class SignalingService {
     if (this.socket) {
       try {
         if (this.socket.readyState === WebSocket.OPEN ||
-            this.socket.readyState === WebSocket.CONNECTING) {
+          this.socket.readyState === WebSocket.CONNECTING) {
           this.socket.close();
         }
       } catch (e) {
@@ -295,5 +302,39 @@ export class SignalingService {
     }
 
     this.connectionStatus.set('Disconnected');
+  }
+
+  toggleCamera() {
+    const stream = this.localStream();
+    if (!stream || !this.targetUser) return;
+
+    stream.getVideoTracks().forEach(track => {
+      track.enabled = !track.enabled;
+
+      this.send({
+        type: 'media_status',
+        to: this.targetUser,
+        videoMuted: !track.enabled
+      });
+    });
+
+    console.log("camera toggled");
+  }
+
+  toggleAudio() {
+    const stream = this.localStream();
+    if (!stream || !this.targetUser) return;
+
+    stream.getAudioTracks().forEach(track => {
+      track.enabled = !track.enabled;
+
+      this.send({
+        type: 'media_status',
+        to: this.targetUser,
+        audioMuted: !track.enabled
+      });
+    });
+
+    console.log("audio toggled");
   }
 }
