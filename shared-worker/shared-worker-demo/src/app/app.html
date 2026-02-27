@@ -1,0 +1,32 @@
+<h3>Port Status: {{portStatus()}}</h3>
+<h3>Add Message</h3>
+
+<input type="number" [(ngModel)]="msgId" placeholder="ID" required />
+<input type="text" [(ngModel)]="msgContent" placeholder="Content" required />
+<button (click)="add()">Add</button>
+
+<hr />
+
+<h3>Messages</h3>
+
+@if (messages().length === 0) {
+<p>No messages found</p>
+} @else {
+<ul>
+  @for (msg of messages(); track msg.msg_id) {
+  <li>
+    {{ msg.msg_id }} — {{ msg.msg_content }}
+    <button (click)="delete(msg.msg_id)">Delete</button>
+  </li>
+  }
+</ul>
+}
+
+<!-- <hr />
+<h3>Search by MsgID</h3>
+<input type="number" placeholder="Enter msg id" [(ngModel)]="searchId" required>
+<button (click)="searchById()">Search</button>
+@if(searchResult())
+{
+<p>msg_id: {{searchResult()?.msg_id}} msg_content: {{searchResult()?.msg_content}}</p>
+} -->

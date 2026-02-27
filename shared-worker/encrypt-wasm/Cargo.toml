@@ -1,0 +1,17 @@
+[package]
+name = "encrypt-wasm"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2"
+aes-gcm = { version = "0.10", features = ["aes"] }
+base64 = "0.21"
+rand = "0.8"
+console_error_panic_hook = "0.1"
+
+# REQUIRED for randomness in WASM (very important)
+getrandom = { version = "0.2", features = ["js"] }
